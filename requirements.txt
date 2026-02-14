@@ -1,0 +1,9 @@
+# OPDS Server Requirements
+# Python 3.11+
+
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# Optional PDF metadata extraction
+pypdf>=5.0.0

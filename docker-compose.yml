@@ -1,0 +1,60 @@
+# DropShelf Docker Compose
+# Traefik integration for HTTPS and Let's Encrypt
+
+services:
+  opds:
+    build: .
+    container_name: opds
+    restart: unless-stopped
+
+    # Read-only mount of books directory
+    volumes:
+      - ${BOOKS_DIR_HOST}:/books:ro
+      - opds_cache:/cache
+
+    environment:
+      - BOOKS_DIR=${BOOKS_DIR}
+      - CACHE_TTL=${CACHE_TTL}
+      - MAX_RESULTS=${MAX_RESULTS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - FEED_TITLE=${FEED_TITLE}
+      - FEED_AUTHOR=${FEED_AUTHOR}
+      - AUTH_ENABLED=${AUTH_ENABLED}
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - PORT=8080
+
+    # Port mapping for direct HTTP access (optional, for testing)
+    # Comment out or set HOST_PORT empty in .env to disable
+    ports:
+      - "${HOST_PORT}:8080"
+
+    # Traefik labels for HTTPS routing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.opds.rule=Host(`${OPDS_DOMAIN}`)"
+      - "traefik.http.routers.opds.entrypoints=websecure"
+      - "traefik.http.routers.opds.tls.certresolver=${CERT_RESOLVER}"
+      - "traefik.http.routers.opds.middlewares=opds-headers"
+      - "traefik.http.services.opds.loadbalancer.server.port=8080"
+
+      # Headers middleware for correct URL generation
+      - "traefik.http.middlewares.opds-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.opds-headers.headers.customrequestheaders.X-Forwarded-Host=${OPDS_DOMAIN}"
+
+      # HTTP to HTTPS redirect (unique middleware name to avoid conflicts)
+      - "traefik.http.routers.opds-http.rule=Host(`${OPDS_DOMAIN}`)"
+      - "traefik.http.routers.opds-http.entrypoints=web"
+      - "traefik.http.routers.opds-http.middlewares=opds-redirect-to-https"
+      - "traefik.http.middlewares.opds-redirect-to-https.redirectscheme.scheme=https"
+
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    name: ${TRAEFIK_NETWORK}
+    external: true
+
+volumes:
+  opds_cache:
