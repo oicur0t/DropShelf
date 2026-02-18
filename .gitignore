@@ -23,6 +23,7 @@ CLAUDE.md
 
 # Environment
 .env
+.htpasswd
 
 # Local notes
 notes/

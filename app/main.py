@@ -63,30 +63,48 @@ scanner = get_scanner()
 security = HTTPBasic()
 
 
+def _load_htpasswd():
+    """Load htpasswd file if configured."""
+    if config.HTPASSWD_FILE and Path(config.HTPASSWD_FILE).is_file():
+        from passlib.apache import HtpasswdFile
+        return HtpasswdFile(config.HTPASSWD_FILE)
+    return None
+
+_htpasswd = _load_htpasswd()
+
+
 def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)) -> HTTPBasicCredentials:
     """Verify HTTP Basic Auth credentials if auth is enabled."""
     if not config.AUTH_ENABLED:
-        # Auth disabled, allow access
         return credentials
 
-    if not config.AUTH_USERNAME or not config.AUTH_PASSWORD:
-        # Auth enabled but no credentials configured - deny access
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication enabled but no credentials configured",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-
-    username_ok = secrets.compare_digest(credentials.username, config.AUTH_USERNAME)
-    password_ok = secrets.compare_digest(credentials.password, config.AUTH_PASSWORD)
-    if not (username_ok and password_ok):
+    # Method 1: htpasswd file (recommended)
+    if _htpasswd is not None:
+        if _htpasswd.check_password(credentials.username, credentials.password):
+            return credentials
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Basic"},
         )
 
-    return credentials
+    # Method 2: plaintext env vars (fallback)
+    if config.AUTH_USERNAME and config.AUTH_PASSWORD:
+        username_ok = secrets.compare_digest(credentials.username, config.AUTH_USERNAME)
+        password_ok = secrets.compare_digest(credentials.password, config.AUTH_PASSWORD)
+        if username_ok and password_ok:
+            return credentials
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    raise HTTPException(
+        status_code=401,
+        detail="Authentication enabled but no credentials configured",
+        headers={"WWW-Authenticate": "Basic"},
+    )
 
 
 @app.on_event("startup")

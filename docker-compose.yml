@@ -11,6 +11,7 @@ services:
     volumes:
       - ${BOOKS_DIR_HOST}:/books:ro
       - opds_cache:/cache
+      - ./.htpasswd:/app/.htpasswd:ro
 
     environment:
       - BOOKS_DIR=${BOOKS_DIR}
@@ -20,6 +21,7 @@ services:
       - FEED_TITLE=${FEED_TITLE}
       - FEED_AUTHOR=${FEED_AUTHOR}
       - AUTH_ENABLED=${AUTH_ENABLED}
+      - HTPASSWD_FILE=${HTPASSWD_FILE}
       - AUTH_USERNAME=${AUTH_USERNAME}
       - AUTH_PASSWORD=${AUTH_PASSWORD}
       - PORT=8080

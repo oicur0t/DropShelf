@@ -7,3 +7,6 @@ uvicorn[standard]>=0.32.0
 
 # Optional PDF metadata extraction
 pypdf>=5.0.0
+
+# Authentication (htpasswd support)
+passlib>=1.7.4

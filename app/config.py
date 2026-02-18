@@ -30,6 +30,7 @@ class Config:
 
     # Authentication
     AUTH_ENABLED: bool = os.getenv("AUTH_ENABLED", "false").lower() == "true"
+    HTPASSWD_FILE: str = os.getenv("HTPASSWD_FILE", "")
     AUTH_USERNAME: str = os.getenv("AUTH_USERNAME", "")
     AUTH_PASSWORD: str = os.getenv("AUTH_PASSWORD", "")
 

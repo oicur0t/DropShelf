@@ -91,22 +91,41 @@ curl https://${OPDS_DOMAIN}/opds
 
 ## Authentication
 
-DropShelf supports HTTP Basic Authentication for securing your OPDS catalog. This is implemented at the application level, making it compatible with any reverse proxy (Traefik, Nginx, Caddy, etc.).
+DropShelf supports HTTP Basic Authentication for securing your OPDS catalog. Two methods are available.
 
-### Enabling Basic Auth
+### Method 1: htpasswd File (Recommended)
 
-1. **Update .env:**
+Passwords are stored as hashes, not plaintext.
+
+1. **Generate htpasswd file:**
 ```bash
-# Enable Basic Auth
-AUTH_ENABLED=true
-AUTH_USERNAME=your_username
-AUTH_PASSWORD=your_password
+# Using htpasswd (install: apt install apache2-utils)
+htpasswd -c .htpasswd your_username
+
+# Or using openssl (no extra install needed)
+echo "your_username:$(openssl passwd -apr1 'your_password')" > .htpasswd
 ```
 
-2. **Restart container:**
+2. **Update .env:**
+```bash
+AUTH_ENABLED=true
+HTPASSWD_FILE=.htpasswd
+```
+
+3. **Restart container:**
 ```bash
 docker compose down
 docker compose up -d
+```
+
+### Method 2: Plaintext Env Vars (Fallback)
+
+Used only if `HTPASSWD_FILE` is not set or the file doesn't exist.
+
+```bash
+AUTH_ENABLED=true
+AUTH_USERNAME=your_username
+AUTH_PASSWORD=your_password
 ```
 
 ### Using with KyBook 3
@@ -116,18 +135,15 @@ KyBook 3 supports credentials embedded in the OPDS URL:
 https://username:password@your-domain.com/opds
 ```
 
-When adding the catalog, use this format with your configured username and password.
-
 ### Testing Authentication
 
-Test with curl:
 ```bash
 curl -u username:password https://your-domain.com/opds
 ```
 
 ### Disabling Auth
 
-To disable authentication, set `AUTH_ENABLED=false` in `.env` and restart the container.
+Set `AUTH_ENABLED=false` in `.env` and restart the container.
 
 ## API Endpoints
 
@@ -158,8 +174,9 @@ Configuration is done via `.env` file:
 | `FEED_TITLE` | `My Book Library` | OPDS feed title |
 | `FEED_AUTHOR` | `DropShelf` | OPDS feed author |
 | `AUTH_ENABLED` | `false` | Enable HTTP Basic Auth |
-| `AUTH_USERNAME` | - | Username for authentication |
-| `AUTH_PASSWORD` | - | Password for authentication |
+| `HTPASSWD_FILE` | - | Path to htpasswd file (recommended) |
+| `AUTH_USERNAME` | - | Username for authentication (fallback) |
+| `AUTH_PASSWORD` | - | Password for authentication (fallback) |
 | `TRAEFIK_NETWORK` | `traefik_network` | Docker network for Traefik |
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
 
