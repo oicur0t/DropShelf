@@ -172,7 +172,7 @@ class TwoPhaseScanner:
 
                 try:
                     # Extract with timeout
-                    metadata = self._extract_with_timeout(get_metadata, filepath, timeout=0.3)
+                    metadata = self._extract_with_timeout(get_metadata, filepath, timeout=10.0)
 
                     if metadata:
                         # Update cache with extracted metadata

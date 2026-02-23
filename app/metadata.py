@@ -277,13 +277,13 @@ def get_metadata(filepath: Path) -> BookMetadata:
     author = None
 
     if suffix == ".epub":
-        result = _extract_with_timeout(extract_epub_metadata, filepath, timeout=0.5)
+        result = _extract_with_timeout(extract_epub_metadata, filepath, timeout=3.0)
         if result:
             title = result.get("title")
             author = result.get("author")
 
     elif suffix == ".pdf":
-        result = _extract_with_timeout(extract_pdf_metadata, filepath, timeout=0.5)
+        result = _extract_with_timeout(extract_pdf_metadata, filepath, timeout=3.0)
         if result:
             title = result.get("title")
             author = result.get("author")
