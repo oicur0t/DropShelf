@@ -15,6 +15,7 @@ class Config:
     # Cache settings
     CACHE_TTL: int = int(os.getenv("CACHE_TTL", "300"))  # 5 minutes default
     CACHE_MAX_SIZE: int = int(os.getenv("CACHE_MAX_SIZE", "1000"))  # Max books in cache
+    SCAN_INTERVAL: int = int(os.getenv("SCAN_INTERVAL", "30"))  # Directory poll interval in seconds (0 to disable)
 
     # Pagination
     MAX_RESULTS: int = int(os.getenv("MAX_RESULTS", "50"))

@@ -128,6 +128,11 @@ async def startup_event():
         # Start Phase 2: Background enrichment
         scanner.start_background_enrichment()
 
+    # Start background directory watcher for drag-and-drop updates
+    if config.SCAN_INTERVAL > 0:
+        scanner.start_watcher(config.SCAN_INTERVAL)
+        logger.info(f"Startup: Directory watcher active (every {config.SCAN_INTERVAL}s)")
+
 
 def get_base_url(request: Request) -> str:
     """Get base URL from request."""

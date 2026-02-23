@@ -214,15 +214,80 @@ class TwoPhaseScanner:
 
     def start_background_enrichment(self) -> None:
         """Start Phase 2 enrichment in background thread."""
-        if self.enriching or self._enrich_thread:
+        if self.enriching:
             return
 
         def run_enrichment():
             self.phase2_enrich_metadata()
+            self._enrich_thread = None
 
         self._enrich_thread = threading.Thread(target=run_enrichment, daemon=True)
         self._enrich_thread.start()
         logger.info("Phase 2: Background enrichment started")
+
+    def _get_current_filenames(self) -> dict[str, float]:
+        """Scan directory for book files. Returns {filename: mtime}. Fast — no file I/O beyond dir entries."""
+        result = {}
+        try:
+            with os.scandir(self.books_dir) as entries:
+                for entry in entries:
+                    if entry.is_file() and Path(entry.name).suffix.lower() in config.ALLOWED_EXTENSIONS:
+                        result[entry.name] = entry.stat().st_mtime
+        except Exception as e:
+            logger.error(f"Failed to scan directory: {e}")
+        return result
+
+    def check_and_apply_diff(self) -> tuple[int, int]:
+        """Check for added/removed books and update cache in-place.
+
+        Returns:
+            Tuple of (added_count, removed_count)
+        """
+        current = self._get_current_filenames()
+        cached_names = set(self._cache.keys())
+        current_names = set(current.keys())
+
+        added = current_names - cached_names
+        removed = cached_names - current_names
+
+        if not added and not removed:
+            return 0, 0
+
+        for filename in removed:
+            del self._cache[filename]
+
+        for filename in added:
+            parsed = parse_filename(filename)
+            self._cache[filename] = {
+                "title": parsed["title"],
+                "author": parsed["author"],
+                "format": Path(filename).suffix[1:].upper(),
+                "mtime": current[filename],
+                "has_full_metadata": False,
+            }
+
+        self.save_cache()
+        logger.info(f"Directory diff applied: +{len(added)} added, -{len(removed)} removed")
+
+        if added:
+            self.start_background_enrichment()
+
+        return len(added), len(removed)
+
+    def start_watcher(self, interval: int) -> None:
+        """Start background directory polling watcher."""
+        def _watch():
+            logger.info(f"Directory watcher started, polling every {interval}s")
+            while True:
+                time.sleep(interval)
+                try:
+                    added, removed = self.check_and_apply_diff()
+                    if added or removed:
+                        logger.info(f"Watcher: +{added} new books, -{removed} removed")
+                except Exception as e:
+                    logger.error(f"Watcher error: {e}")
+
+        threading.Thread(target=_watch, daemon=True, name="dir-watcher").start()
 
     def get_enrichment_status(self) -> dict[str, Any]:
         """Get enrichment progress status.
