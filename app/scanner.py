@@ -247,6 +247,11 @@ class TwoPhaseScanner:
         cached_names = set(self._cache.keys())
         current_names = set(current.keys())
 
+        # Safety guard: if scan returned nothing but cache has books, assume scan failed
+        if not current and cached_names:
+            logger.warning("Watcher: scan returned 0 files but cache has books — skipping (possible mount issue)")
+            return 0, 0
+
         added = current_names - cached_names
         removed = cached_names - current_names
 
