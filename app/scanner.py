@@ -107,7 +107,7 @@ class TwoPhaseScanner:
             # Use os.scandir for better performance than Path.rglob
             with os.scandir(self.books_dir) as entries:
                 for entry in entries:
-                    if entry.is_file() and Path(entry.name).suffix.lower() in config.ALLOWED_EXTENSIONS:
+                    if entry.is_file() and not entry.name.startswith('.') and Path(entry.name).suffix.lower() in config.ALLOWED_EXTENSIONS:
                         filepath = Path(entry.path)
                         mtime = entry.stat().st_mtime
 
@@ -231,7 +231,7 @@ class TwoPhaseScanner:
         try:
             with os.scandir(self.books_dir) as entries:
                 for entry in entries:
-                    if entry.is_file() and Path(entry.name).suffix.lower() in config.ALLOWED_EXTENSIONS:
+                    if entry.is_file() and not entry.name.startswith('.') and Path(entry.name).suffix.lower() in config.ALLOWED_EXTENSIONS:
                         result[entry.name] = entry.stat().st_mtime
         except Exception as e:
             logger.error(f"Failed to scan directory: {e}")
